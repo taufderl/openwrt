@@ -26,7 +26,7 @@ Signed-off-by: Tim <tadl-git@taufderl.de>
  	sun8i-h3-nanopi-duo2.dtb \
 --- /dev/null
 +++ b/arch/arm/boot/dts/allwinner/sun8i-h3-fingbox.dts
-@@ -0,0 +1,347 @@
+@@ -0,0 +1,344 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Fingbox (FIN-B-001) network appliance by Fing / Domotz.
@@ -83,18 +83,15 @@ Signed-off-by: Tim <tadl-git@taufderl.de>
 +	keys {
 +		compatible = "gpio-keys";
 +
-+		/* recessed button on the case, labelled "Reset" */
++		/*
++		 * Pin-hole button on the case, labelled "Reset". The board's
++		 * RESET button resets the SoC directly, and its POWER button
++		 * is not wired to a GPIO.
++		 */
 +		key-reset {
 +			label = "reset";
 +			linux,code = <KEY_RESTART>;
 +			gpios = <&r_pio 0 4 GPIO_ACTIVE_LOW>; /* PL4 */
-+		};
-+
-+		/* button on the board, labelled "POWER" */
-+		key-power {
-+			label = "power";
-+			linux,code = <KEY_POWER>;
-+			gpios = <&r_pio 0 0 GPIO_ACTIVE_LOW>; /* PL0 */
 +		};
 +	};
 +
