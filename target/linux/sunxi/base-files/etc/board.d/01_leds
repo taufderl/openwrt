@@ -7,6 +7,10 @@ boardname="${board##*,}"
 board_config_update
 
 case $board in
+fing,fingbox)
+	ucidef_set_led_netdev "lan" "LAN" "blue:indicator-2" "eth0" "link tx rx"
+	ucidef_set_led_wlan "wlan" "WLAN" "blue:indicator-3" "phy0tpt"
+	;;
 friendlyarm,nanopi-r1|\
 friendlyarm,nanopi-r1s-h5)
 	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth0"

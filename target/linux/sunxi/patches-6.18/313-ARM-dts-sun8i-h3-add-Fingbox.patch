@@ -1,0 +1,376 @@
+From: Tim <tadl-git@taufderl.de>
+Subject: [PATCH] ARM: dts: sun8i: h3: add support for the Fingbox
+
+The Fingbox (FIN-B-001) is a network monitoring appliance by Fing/Domotz,
+built around an Allwinner H3 with 1 GiB DDR3 and 8 GB eMMC.
+
+- RTL8211E gigabit PHY on the EMAC
+- AR9271 USB Wi-Fi on EHCI3, without EEPROM (calibration from a file)
+- 24C02 EEPROM on I2C1 holding the Ethernet and Wi-Fi MAC addresses
+- RGB LED ring: PCA9633 (1 LED) and PCA9635 (5 LEDs) on I2C1
+- white and green status LEDs on the board, reset button on the case
+- USB-A host port, micro-USB for power, unpopulated micro-SD footprint
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Tim <tadl-git@taufderl.de>
+---
+--- a/arch/arm/boot/dts/allwinner/Makefile
++++ b/arch/arm/boot/dts/allwinner/Makefile
+@@ -231,6 +231,7 @@ dtb-$(CONFIG_MACH_SUN8I) += \
+ 	sun8i-h3-bananapi-m2-plus.dtb \
+ 	sun8i-h3-bananapi-m2-plus-v1.2.dtb \
+ 	sun8i-h3-beelink-x2.dtb \
++	sun8i-h3-fingbox.dtb \
+ 	sun8i-h3-libretech-all-h3-cc.dtb \
+ 	sun8i-h3-mapleboard-mp130.dtb \
+ 	sun8i-h3-nanopi-duo2.dtb \
+--- /dev/null
++++ b/arch/arm/boot/dts/allwinner/sun8i-h3-fingbox.dts
+@@ -0,0 +1,347 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Fingbox (FIN-B-001) network appliance by Fing / Domotz.
++ *
++ * Allwinner H3, 1 GiB DDR3, 8 GB eMMC, RTL8211E gigabit PHY,
++ * AR9271 USB Wi-Fi without EEPROM, and an RGB LED ring driven by a
++ * PCA9633 and a PCA9635 on I2C1.
++ */
++
++/dts-v1/;
++#include "sun8i-h3.dtsi"
++#include "sunxi-common-regulators.dtsi"
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
++
++/ {
++	model = "Fingbox";
++	compatible = "fing,fingbox", "allwinner,sun8i-h3";
++
++	aliases {
++		ethernet0 = &emac;
++		serial0 = &uart0;
++		led-boot = &led_ring1_green;
++		led-failsafe = &led_ring1_red;
++		led-running = &led_ring1_green;
++		led-upgrade = &led_ring1_blue;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		/* white LED on the board, not visible from outside */
++		led-0 {
++			function = LED_FUNCTION_POWER;
++			color = <LED_COLOR_ID_WHITE>;
++			gpios = <&r_pio 0 10 GPIO_ACTIVE_HIGH>; /* PL10 */
++			default-state = "on";
++		};
++
++		/* green LED on the board, not visible from outside */
++		led-1 {
++			function = LED_FUNCTION_STATUS;
++			color = <LED_COLOR_ID_GREEN>;
++			gpios = <&pio 0 15 GPIO_ACTIVE_HIGH>; /* PA15 */
++		};
++	};
++
++	keys {
++		compatible = "gpio-keys";
++
++		/* recessed button on the case, labelled "Reset" */
++		key-reset {
++			label = "reset";
++			linux,code = <KEY_RESTART>;
++			gpios = <&r_pio 0 4 GPIO_ACTIVE_LOW>; /* PL4 */
++		};
++
++		/* button on the board, labelled "POWER" */
++		key-power {
++			label = "power";
++			linux,code = <KEY_POWER>;
++			gpios = <&r_pio 0 0 GPIO_ACTIVE_LOW>; /* PL0 */
++		};
++	};
++
++	reg_gmac_3v3: gmac-3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "gmac-3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		startup-delay-us = <100000>;
++		enable-active-high;
++		gpio = <&pio 3 6 GPIO_ACTIVE_HIGH>; /* PD6 */
++	};
++
++	/* supply of the LED controllers, which have no supply binding */
++	reg_led_3v3: led-3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "led-3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-always-on;
++		regulator-boot-on;
++		enable-active-high;
++		gpio = <&pio 0 17 GPIO_ACTIVE_HIGH>; /* PA17 */
++	};
++};
++
++&ehci1 {
++	/* USB-A port */
++	status = "okay";
++};
++
++&ehci3 {
++	/* soldered-down AR9271 Wi-Fi */
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "okay";
++
++	wifi@1 {
++		compatible = "usb0cf3,9271";
++		reg = <1>;
++		qca,no-eeprom;
++		firmware-name = "ath9k_htc/fingbox-eeprom.bin";
++		nvmem-cells = <&macaddr_wifi>;
++		nvmem-cell-names = "mac-address";
++	};
++};
++
++&emac {
++	pinctrl-names = "default";
++	pinctrl-0 = <&emac_rgmii_pins>;
++	phy-supply = <&reg_gmac_3v3>;
++	phy-handle = <&ext_rgmii_phy>;
++	phy-mode = "rgmii-id";
++	nvmem-cells = <&macaddr_eth>;
++	nvmem-cell-names = "mac-address";
++	status = "okay";
++};
++
++&external_mdio {
++	ext_rgmii_phy: ethernet-phy@1 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <1>;
++	};
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pins>; /* PA18, PA19 */
++	status = "okay";
++
++	eeprom@50 {
++		compatible = "atmel,24c02";
++		reg = <0x50>;
++		pagesize = <16>;
++		read-only;
++
++		nvmem-layout {
++			compatible = "fixed-layout";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			macaddr_eth: mac-address@0 {
++				reg = <0x0 0x6>;
++			};
++
++			macaddr_wifi: mac-address@6 {
++				reg = <0x6 0x6>;
++			};
++		};
++	};
++
++	/* LED ring: one RGB LED on the PCA9633, five on the PCA9635 */
++	led-controller@62 {
++		compatible = "nxp,pca9633";
++		reg = <0x62>;
++		nxp,totem-pole;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		led_ring1_green: led@0 {
++			reg = <0>;
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <1>;
++		};
++
++		led_ring1_red: led@1 {
++			reg = <1>;
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <1>;
++		};
++
++		led_ring1_blue: led@2 {
++			reg = <2>;
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <1>;
++		};
++	};
++
++	led-controller@15 {
++		compatible = "nxp,pca9635";
++		reg = <0x15>;
++		nxp,totem-pole;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		led@0 {
++			reg = <0>;
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <2>;
++		};
++
++		led@1 {
++			reg = <1>;
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <2>;
++		};
++
++		led@2 {
++			reg = <2>;
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <2>;
++		};
++
++		led@3 {
++			reg = <3>;
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <6>;
++		};
++
++		led@4 {
++			reg = <4>;
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <6>;
++		};
++
++		led@5 {
++			reg = <5>;
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <6>;
++		};
++
++		led@6 {
++			reg = <6>;
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <5>;
++		};
++
++		led@7 {
++			reg = <7>;
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <5>;
++		};
++
++		led@8 {
++			reg = <8>;
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <5>;
++		};
++
++		led@9 {
++			reg = <9>;
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <3>;
++		};
++
++		led@a {
++			reg = <10>;
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <3>;
++		};
++
++		led@b {
++			reg = <11>;
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <3>;
++		};
++
++		led@c {
++			reg = <12>;
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <4>;
++		};
++
++		led@d {
++			reg = <13>;
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <4>;
++		};
++
++		led@e {
++			reg = <14>;
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_INDICATOR;
++			function-enumerator = <4>;
++		};
++	};
++};
++
++&mmc0 {
++	/* micro-SD footprint, socket not populated */
++	vmmc-supply = <&reg_vcc3v3>;
++	bus-width = <4>;
++	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
++	status = "okay";
++};
++
++&mmc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_8bit_pins>;
++	vmmc-supply = <&reg_vcc3v3>;
++	bus-width = <8>;
++	non-removable;
++	cap-mmc-hw-reset;
++	status = "okay";
++};
++
++&mmc2_8bit_pins {
++	/* Increase drive strength for DDR modes */
++	drive-strength = <40>;
++	/* eMMC is missing pull-ups */
++	bias-pull-up;
++};
++
++&ohci1 {
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0_pa_pins>;
++	status = "okay";
++};
++
++&usb_otg {
++	/* micro-USB port is the power input */
++	dr_mode = "peripheral";
++	status = "okay";
++};
++
++&usbphy {
++	status = "okay";
++};

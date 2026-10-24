@@ -23,6 +23,16 @@ define Device/cubietech_cubietruck
 endef
 TARGET_DEVICES += cubietech_cubietruck
 
+define Device/fing_fingbox
+  $(call Device/FitImageGzip)
+  DEVICE_VENDOR := Fing
+  DEVICE_MODEL := Fingbox
+  DEVICE_PACKAGES:=kmod-ath9k-htc kmod-gpio-button-hotplug \
+	kmod-leds-pca963x wpad-basic-mbedtls
+  SOC := sun8i-h3
+endef
+TARGET_DEVICES += fing_fingbox
+
 define Device/friendlyarm_nanopi-m1-plus
   $(call Device/FitImageGzip)
   DEVICE_VENDOR := FriendlyARM
