@@ -10,6 +10,13 @@ sunxi_setup_interfaces()
 	local board="$1"
 
 	case "$board" in
+	fing,fingbox)
+		ucidef_set_interface_lan "eth0"
+		# the soldered-down AR9271 on EHCI3 gets a varying USB bus number
+		ucidef_add_wlan "platform/soc/1c1d000.usb/usb1/1-1/1-1:1.0" \
+			"platform/soc/1c1d000.usb/usb2/2-1/2-1:1.0" \
+			"platform/soc/1c1d000.usb/usb3/3-1/3-1:1.0"
+		;;
 	friendlyarm,nanopi-r1|\
 	friendlyarm,nanopi-r1s-h5)
 		ucidef_set_interfaces_lan_wan "eth1" "eth0"

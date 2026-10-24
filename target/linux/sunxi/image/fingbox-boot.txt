@@ -1,0 +1,7 @@
+# The Fingbox keeps its vendor U-Boot (2017.01), which has no FIT support
+# and finds this script through distro boot on the first partition.
+part uuid ${devtype} ${devnum}:2 uuid
+setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootwait
+load ${devtype} ${devnum}:1 ${kernel_addr_r} zImage
+load ${devtype} ${devnum}:1 ${fdt_addr_r} dtb
+bootz ${kernel_addr_r} - ${fdt_addr_r}

@@ -252,15 +252,6 @@ define U-Boot/orangepi_plus
   BUILD_DEVICES:=xunlong_orangepi-plus
 endef
 
-# The stock Fingbox bootloader is U-Boot built for the Orange Pi Plus 2E,
-# whose DRAM, eMMC and Ethernet setup matches the Fingbox.
-define U-Boot/fingbox
-  BUILD_SUBTARGET:=cortexa7
-  NAME:=Fingbox (H3)
-  BUILD_DEVICES:=fing_fingbox
-  UBOOT_CONFIG:=orangepi_plus2e
-endef
-
 define U-Boot/orangepi_2
   BUILD_SUBTARGET:=cortexa7
   NAME:=Orange Pi 2 (H3)
@@ -481,7 +472,6 @@ UBOOT_TARGETS := \
 	Linksprite_pcDuino3 \
 	Linksprite_pcDuino3_Nano \
 	Lamobo_R1 \
-	fingbox \
 	nanopi_m1_plus \
 	zeropi \
 	nanopi_neo \

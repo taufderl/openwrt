@@ -24,12 +24,15 @@ endef
 TARGET_DEVICES += cubietech_cubietruck
 
 define Device/fing_fingbox
-  $(call Device/FitImageGzip)
   DEVICE_VENDOR := Fing
   DEVICE_MODEL := Fingbox
   DEVICE_PACKAGES:=kmod-ath9k-htc kmod-gpio-button-hotplug \
 	kmod-leds-pca963x wpad-basic-mbedtls
   SOC := sun8i-h3
+  KERNEL := kernel-bin
+  KERNEL_INITRAMFS := kernel-bin | sunxi-append-dtb
+  SUNXI_BOOT_SCRIPT := fingbox-boot.txt
+  IMAGE/sdcard.img.gz := sunxi-sdcard-vendor-uboot | append-metadata | gzip
 endef
 TARGET_DEVICES += fing_fingbox
 

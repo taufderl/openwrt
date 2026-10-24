@@ -26,7 +26,7 @@ Signed-off-by: Tim <tadl-git@taufderl.de>
  	sun8i-h3-nanopi-duo2.dtb \
 --- /dev/null
 +++ b/arch/arm/boot/dts/allwinner/sun8i-h3-fingbox.dts
-@@ -0,0 +1,344 @@
+@@ -0,0 +1,346 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Fingbox (FIN-B-001) network appliance by Fing / Domotz.
@@ -50,6 +50,8 @@ Signed-off-by: Tim <tadl-git@taufderl.de>
 +
 +	aliases {
 +		ethernet0 = &emac;
++		mmc0 = &mmc2;
++		mmc1 = &mmc0;
 +		serial0 = &uart0;
 +		led-boot = &led_ring1_green;
 +		led-failsafe = &led_ring1_red;
